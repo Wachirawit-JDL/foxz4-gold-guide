@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: foxz4-gold-guide
+    runtime: python
+    plan: free
+    buildCommand: python -m pip install -r requirements-cloud.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 webhook_app:app
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: SYMBOL
+        value: GC=F
+      - key: TIMEFRAME
+        value: M15
+      - key: AUTO_TRADE
+        value: "false"
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: WEBHOOK_SECRET
+        generateValue: true
+

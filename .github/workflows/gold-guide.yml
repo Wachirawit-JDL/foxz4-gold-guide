@@ -1,0 +1,49 @@
+name: Gold News Guide
+
+on:
+  schedule:
+    - cron: "4,19,34,49 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gold-news-guide
+  cancel-in-progress: false
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-cloud.txt
+      - name: Install dependencies
+        run: python -m pip install -r requirements-cloud.txt
+      - name: Analyze gold and global news
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SYMBOL: GC=F
+          TIMEFRAME: M15
+          AUTO_TRADE: "false"
+          MANUAL_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+        run: python cloud_job.py
+      - name: Save notification state
+        run: |
+          if [ ! -f .bot_state.json ]; then
+            exit 0
+          fi
+          if git diff --quiet -- .bot_state.json && git ls-files --error-unmatch .bot_state.json >/dev/null 2>&1; then
+            exit 0
+          fi
+          git config user.name "gold-guide-bot"
+          git config user.email "gold-guide-bot@users.noreply.github.com"
+          git add .bot_state.json
+          git commit -m "Update gold guide state [skip ci]"
+          git push
