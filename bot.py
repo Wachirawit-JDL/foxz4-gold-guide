@@ -21,6 +21,8 @@ logging.basicConfig(
 )
 log = logging.getLogger("gold-guide-bot")
 running = True
+TRADINGVIEW_GC_URL = "https://www.tradingview.com/chart/?symbol=COMEX%3AGC1%21"
+TRADINGVIEW_XAUUSD_URL = "https://www.tradingview.com/chart/?symbol=OANDA%3AXAUUSD"
 
 
 def stop(*_: object) -> None:
@@ -55,7 +57,10 @@ def format_advice(settings: Settings, plan: TradePlan, news: NewsMood, bar_time:
         levels = f"รอดูแนวรับ: {_price(plan.support)}\nรอดูแนวต้าน: {_price(plan.resistance)}"
 
     reasons = "\n".join(f"• {reason}" for reason in plan.reasons[:4])
-    headlines = "\n".join(f"• {item.title[:110]} ({item.domain})" for item in news.articles[:3])
+    headlines = "\n".join(
+        f"• [{item.category}] {item.title[:105]} ({item.domain})"
+        for item in news.articles[:4]
+    )
     risk = "\n⚠️ มีข่าวผลกระทบสูง ควรลดขนาดหรือรอความผันผวนสงบ" if news.high_impact else ""
     return (
         f"{title}\n\n"
@@ -67,6 +72,7 @@ def format_advice(settings: Settings, plan: TradePlan, news: NewsMood, bar_time:
         f"เหตุผล:\n{reasons}{risk}\n\n"
         f"ข่าวสำคัญที่ตรวจพบ:\n{headlines or '• ยังไม่พบหัวข้อเด่น'}\n\n"
         f"แท่งเวลา: {timestamp}\n"
+        f"กราฟ TradingView: {TRADINGVIEW_GC_URL}\n"
         "หมายเหตุ: เป็นแนวทาง ไม่ใช่คำสั่งซื้อขาย และราคาอาจต่างจาก XAUUSD ของโบรกเกอร์"
     )
 
@@ -79,11 +85,24 @@ def format_news(news: NewsMood) -> str:
     else:
         mood = "🟡 ภาพรวมข่าวยังผสมกัน"
     headlines = "\n\n".join(
-        f"• {item.title[:140]}\n  {item.domain}\n  {item.url}"
-        for item in news.articles[:5]
+        f"• [{item.category}] {item.title[:135]}\n  {item.domain}\n  {item.url}"
+        for item in news.articles[:8]
     )
     risk = "\n\n⚠️ พบหัวข้อข่าวผลกระทบสูง ตลาดอาจผันผวนมาก" if news.high_impact else ""
-    return f"📰 ข่าวที่อาจกระทบทอง\n\n{mood}\n{news.summary}{risk}\n\n{headlines or 'ยังไม่พบข่าวเด่น'}"
+    return (
+        f"📰 ข่าวที่อาจกระทบทอง\n\n{mood}\n{news.summary}{risk}\n\n"
+        f"{headlines or 'ยังไม่พบข่าวเด่น'}\n\n"
+        "หัวข้อข่าวคงภาษาต้นฉบับเพื่อป้องกันความหมายคลาดเคลื่อน"
+    )
+
+
+def format_chart() -> str:
+    return (
+        "📊 กราฟทองบน TradingView\n\n"
+        f"Gold Futures ต่อเนื่อง (COMEX:GC1!):\n{TRADINGVIEW_GC_URL}\n\n"
+        f"ทอง Spot (OANDA:XAUUSD):\n{TRADINGVIEW_XAUUSD_URL}\n\n"
+        "บอทคำนวณสัญญาณจาก GC=F; ใช้ TradingView สำหรับเปิดดูและยืนยันกราฟด้วยตนเอง"
+    )
 
 
 def analyze_now(settings: Settings, market: YahooGoldClient, news_client: GlobalNewsClient) -> tuple[TradePlan, NewsMood, int]:
@@ -156,6 +175,8 @@ def main() -> None:
                     elif command == "news":
                         telegram.send("⏳ กำลังรวบรวมข่าวทั่วโลก...")
                         telegram.send(format_news(news_client.fetch()))
+                    elif command == "chart":
+                        telegram.send(format_chart())
                     elif command == "status":
                         if latest_plan is None or latest_bar is None:
                             telegram.send("✅ บอทออนไลน์ กำลังรอผลวิเคราะห์รอบแรก")

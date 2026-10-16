@@ -13,6 +13,10 @@ class CommandTests(unittest.TestCase):
     def test_thai_alias(self):
         self.assertEqual(parse_command("  วิเคราะห์ทอง  "), "gold")
 
+    def test_chart_command_and_alias(self):
+        self.assertEqual(parse_command("/chart"), "chart")
+        self.assertEqual(parse_command("กราฟทอง"), "chart")
+
     def test_unknown_text(self):
         self.assertIsNone(parse_command("hello there"))
 

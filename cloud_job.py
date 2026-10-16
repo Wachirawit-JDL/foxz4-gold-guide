@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from bot import format_advice, format_news
+from bot import format_advice, format_chart, format_news
 from src.advisor import build_trade_plan
 from src.commands import HELP_TEXT, parse_command
 from src.config import Settings
@@ -58,6 +58,8 @@ def handle_commands(
             telegram.send(warning + format_advice(settings, plan, news, latest_bar))
         elif command == "news":
             telegram.send(format_news(news))
+        elif command == "chart":
+            telegram.send(format_chart())
         elif command == "status":
             checked = datetime.fromtimestamp(latest_bar, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
             telegram.send(
@@ -75,6 +77,7 @@ def handle_commands(
 def main() -> None:
     settings = Settings.from_env()
     telegram = TelegramClient(settings.telegram_bot_token, settings.telegram_chat_id)
+    telegram.set_commands()
     market = YahooGoldClient(settings.symbol, settings.timeframe)
     count = max(settings.slow_ema, settings.rsi_period, 20) * 4 + 10
     bars = market.closed_bars(count)

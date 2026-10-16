@@ -41,6 +41,7 @@ class TelegramClient:
         commands = [
             {"command": "gold", "description": "วิเคราะห์ทอง พร้อมโซนเข้า SL และ TP"},
             {"command": "news", "description": "สรุปข่าวที่อาจกระทบทอง"},
+            {"command": "chart", "description": "เปิดกราฟทองบน TradingView"},
             {"command": "status", "description": "ดูสถานะและเวลาวิเคราะห์ล่าสุด"},
             {"command": "help", "description": "ดูวิธีใช้บอท"},
         ]
