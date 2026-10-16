@@ -12,6 +12,7 @@ from src.commands import HELP_TEXT, parse_command
 from src.config import Settings
 from src.market_data import TIMEFRAME_SECONDS, AlphaVantageGoldChecker, PriceCheck, TwelveDataGoldClient, apply_price_check, check_price
 from src.news_client import GlobalNewsClient, NewsMood
+from src.paper_trader import format_paper_stats, process_paper_trade
 from src.telegram_client import TelegramClient
 
 
@@ -70,6 +71,8 @@ def handle_commands(
                 f"แท่งที่วิเคราะห์: {checked}\n"
                 "ไม่มีการเปิดออเดอร์อัตโนมัติ"
             )
+        elif command == "paper":
+            telegram.send(format_paper_stats(state))
         else:
             telegram.send("ไม่เข้าใจข้อความนี้ พิมพ์ /help เพื่อดูคำสั่งที่ใช้ได้")
     return changed
@@ -102,11 +105,22 @@ def main() -> None:
     )
     plan = apply_price_check(plan, price_validation)
     state = load_state()
+    paper_changed = False
+    if not stale:
+        paper_messages, paper_changed = process_paper_trade(
+            state,
+            plan,
+            latest_bar,
+            bars.highs[-1],
+            bars.lows[-1],
+        )
+        for message in paper_messages:
+            telegram.send(message)
     command_state_changed = handle_commands(
         telegram, settings, plan, news, latest_bar, stale, state, price_validation,
     )
     if stale:
-        if command_state_changed:
+        if command_state_changed or paper_changed:
             save_state(state)
         print("Market has no recent closed bar; scheduled advice not sent")
         return
@@ -127,7 +141,7 @@ def main() -> None:
         save_state(state)
         print(f"Sent {plan.action} advice")
     else:
-        if command_state_changed:
+        if command_state_changed or paper_changed:
             save_state(state)
         print(f"No material change ({plan.action}); nothing sent")
 

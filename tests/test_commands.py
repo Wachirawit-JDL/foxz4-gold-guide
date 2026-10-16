@@ -17,6 +17,11 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(parse_command("/chart"), "chart")
         self.assertEqual(parse_command("กราฟทอง"), "chart")
 
+    def test_paper_stats_command(self):
+        self.assertEqual(parse_command("/paper"), "paper")
+        self.assertEqual(parse_command("/stats"), "paper")
+        self.assertEqual(parse_command("สถิติ"), "paper")
+
     def test_unknown_text(self):
         self.assertIsNone(parse_command("hello there"))
 

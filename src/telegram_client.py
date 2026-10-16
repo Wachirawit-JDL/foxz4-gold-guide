@@ -43,6 +43,7 @@ class TelegramClient:
             {"command": "news", "description": "สรุปข่าวที่อาจกระทบทอง"},
             {"command": "chart", "description": "เปิดกราฟทองบน TradingView"},
             {"command": "status", "description": "ดูสถานะและเวลาวิเคราะห์ล่าสุด"},
+            {"command": "paper", "description": "ดูออเดอร์ทดลองและสถิติสะสม"},
             {"command": "help", "description": "ดูวิธีใช้บอท"},
         ]
         response = requests.post(
