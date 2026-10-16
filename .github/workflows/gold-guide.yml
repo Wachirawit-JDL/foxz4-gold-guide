@@ -29,7 +29,10 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          SYMBOL: GC=F
+          TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
+          ALPHA_VANTAGE_API_KEY: ${{ secrets.ALPHA_VANTAGE_API_KEY }}
+          MARKET_SYMBOL: XAU/USD
+          MAX_PRICE_DIVERGENCE_PCT: "0.8"
           TIMEFRAME: M15
           AUTO_TRADE: "false"
           MANUAL_RUN: ${{ github.event_name == 'workflow_dispatch' }}

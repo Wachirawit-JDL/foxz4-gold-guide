@@ -9,8 +9,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
-      - key: SYMBOL
-        value: GC=F
+      - key: MARKET_SYMBOL
+        value: XAU/USD
+      - key: MAX_PRICE_DIVERGENCE_PCT
+        value: "0.8"
       - key: TIMEFRAME
         value: M15
       - key: AUTO_TRADE
@@ -18,6 +20,10 @@ services:
       - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: TELEGRAM_CHAT_ID
+        sync: false
+      - key: TWELVE_DATA_API_KEY
+        sync: false
+      - key: ALPHA_VANTAGE_API_KEY
         sync: false
       - key: WEBHOOK_SECRET
         generateValue: true

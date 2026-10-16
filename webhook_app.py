@@ -9,15 +9,16 @@ from flask import Flask, abort, jsonify, request
 from bot import analyze_now, format_advice, format_news
 from src.commands import HELP_TEXT, parse_command
 from src.config import Settings
+from src.market_data import AlphaVantageGoldChecker, TwelveDataGoldClient
 from src.news_client import GlobalNewsClient
 from src.telegram_client import TelegramClient
-from src.yahoo_client import YahooGoldClient
 
 
 app = Flask(__name__)
 settings = Settings.from_env()
 telegram = TelegramClient(settings.telegram_bot_token, settings.telegram_chat_id)
-market = YahooGoldClient(settings.symbol, settings.timeframe)
+market = TwelveDataGoldClient(settings.twelve_data_api_key, settings.market_symbol, settings.timeframe)
+checker = AlphaVantageGoldChecker(settings.alpha_vantage_api_key)
 news_client = GlobalNewsClient()
 webhook_secret = os.environ["WEBHOOK_SECRET"]
 
@@ -33,15 +34,15 @@ def process_update(update: dict) -> None:
             telegram.send(HELP_TEXT)
         elif command == "gold":
             telegram.send("⏳ กำลังอ่านกราฟและข่าวล่าสุด กรุณารอสักครู่...")
-            plan, news, bar_time = analyze_now(settings, market, news_client)
-            telegram.send(format_advice(settings, plan, news, bar_time))
+            plan, news, bar_time, price_validation = analyze_now(settings, market, checker, news_client)
+            telegram.send(format_advice(settings, plan, news, bar_time, price_validation))
         elif command == "news":
             telegram.send("⏳ กำลังรวบรวมข่าวทั่วโลก...")
             telegram.send(format_news(news_client.fetch()))
         elif command == "status":
             telegram.send(
-                f"✅ บอทคลาวด์ออนไลน์\nตลาด: Gold Futures {settings.timeframe}\n"
-                "แหล่งข้อมูล: Yahoo Finance + GDELT + ข่าวทางการ\n"
+                f"✅ บอทคลาวด์ออนไลน์\nตลาด: {settings.market_symbol} {settings.timeframe}\n"
+                "แหล่งราคา: Twelve Data + ตรวจเทียบ Alpha Vantage\n"
                 "ไม่มีการเปิดออเดอร์อัตโนมัติ"
             )
         else:

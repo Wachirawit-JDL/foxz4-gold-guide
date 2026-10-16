@@ -8,9 +8,9 @@ from datetime import datetime, timezone
 from src.advisor import TradePlan, build_trade_plan
 from src.commands import HELP_TEXT, parse_command
 from src.config import Settings
+from src.market_data import AlphaVantageGoldChecker, PriceCheck, TwelveDataGoldClient, apply_price_check, check_price
 from src.news_client import GlobalNewsClient, NewsMood
 from src.telegram_client import TelegramClient
-from src.yahoo_client import YahooGoldClient
 
 
 LOG_FORMAT = "%(asctime)s | %(levelname)s | %(message)s"
@@ -34,7 +34,7 @@ def _price(value: float | None) -> str:
     return "-" if value is None else f"{value:,.2f}"
 
 
-def format_advice(settings: Settings, plan: TradePlan, news: NewsMood, bar_time: int) -> str:
+def format_advice(settings: Settings, plan: TradePlan, news: NewsMood, bar_time: int, price_check: PriceCheck | None = None) -> str:
     timestamp = datetime.fromtimestamp(bar_time, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     if plan.action == "BUY":
         title = "🟢 มุมมอง BUY — รอราคาเข้าโซน"
@@ -62,9 +62,14 @@ def format_advice(settings: Settings, plan: TradePlan, news: NewsMood, bar_time:
         for item in news.articles[:4]
     )
     risk = "\n⚠️ มีข่าวผลกระทบสูง ควรลดขนาดหรือรอความผันผวนสงบ" if news.high_impact else ""
+    validation = price_check.message if price_check else "ยังไม่ได้ตรวจเทียบราคา"
+    if price_check and price_check.reference_price is not None:
+        validation += f" | Alpha Vantage: {_price(price_check.reference_price)}"
     return (
         f"{title}\n\n"
-        f"Gold Futures ({settings.symbol}) | {settings.timeframe}\n"
+        f"ทอง Spot ({settings.market_symbol}) | {settings.timeframe}\n"
+        "แหล่งกราฟหลัก: Twelve Data\n"
+        f"ตรวจเทียบราคา: {validation}\n"
         f"ราคาปิดล่าสุด: {_price(plan.price)}\n"
         f"ความเชื่อมั่นเชิงระบบ: {plan.confidence}%\n\n"
         f"{levels}\n\n"
@@ -72,7 +77,7 @@ def format_advice(settings: Settings, plan: TradePlan, news: NewsMood, bar_time:
         f"เหตุผล:\n{reasons}{risk}\n\n"
         f"ข่าวสำคัญที่ตรวจพบ:\n{headlines or '• ยังไม่พบหัวข้อเด่น'}\n\n"
         f"แท่งเวลา: {timestamp}\n"
-        f"กราฟ TradingView: {TRADINGVIEW_GC_URL}\n"
+        f"กราฟ TradingView: {TRADINGVIEW_XAUUSD_URL}\n"
         "หมายเหตุ: เป็นแนวทาง ไม่ใช่คำสั่งซื้อขาย และราคาอาจต่างจาก XAUUSD ของโบรกเกอร์"
     )
 
@@ -101,11 +106,11 @@ def format_chart() -> str:
         "📊 กราฟทองบน TradingView\n\n"
         f"Gold Futures ต่อเนื่อง (COMEX:GC1!):\n{TRADINGVIEW_GC_URL}\n\n"
         f"ทอง Spot (OANDA:XAUUSD):\n{TRADINGVIEW_XAUUSD_URL}\n\n"
-        "บอทคำนวณสัญญาณจาก GC=F; ใช้ TradingView สำหรับเปิดดูและยืนยันกราฟด้วยตนเอง"
+        "บอทคำนวณจาก XAU/USD ของ Twelve Data และใช้ Alpha Vantage ตรวจเทียบราคา"
     )
 
 
-def analyze_now(settings: Settings, market: YahooGoldClient, news_client: GlobalNewsClient) -> tuple[TradePlan, NewsMood, int]:
+def analyze_now(settings: Settings, market: TwelveDataGoldClient, checker: AlphaVantageGoldChecker, news_client: GlobalNewsClient) -> tuple[TradePlan, NewsMood, int, PriceCheck]:
     count = max(settings.slow_ema, settings.rsi_period, 20) * 4 + 10
     bars = market.closed_bars(count)
     try:
@@ -117,13 +122,16 @@ def analyze_now(settings: Settings, market: YahooGoldClient, news_client: Global
         bars.highs, bars.lows, bars.closes, news,
         settings.fast_ema, settings.slow_ema, settings.rsi_period,
     )
-    return plan, news, bars.times[-1]
+    validation = check_price(plan.price, checker, settings.max_price_divergence_pct)
+    plan = apply_price_check(plan, validation)
+    return plan, news, bars.times[-1], validation
 
 
 def main() -> None:
     settings = Settings.from_env()
     telegram = TelegramClient(settings.telegram_bot_token, settings.telegram_chat_id)
-    market = YahooGoldClient(settings.symbol, settings.timeframe)
+    market = TwelveDataGoldClient(settings.twelve_data_api_key, settings.market_symbol, settings.timeframe)
+    checker = AlphaVantageGoldChecker(settings.alpha_vantage_api_key)
     news_client = GlobalNewsClient()
     signal.signal(signal.SIGINT, stop)
     signal.signal(signal.SIGTERM, stop)
@@ -145,14 +153,14 @@ def main() -> None:
         while running:
             try:
                 if time.monotonic() >= next_auto_check:
-                    plan, news, bar_time = analyze_now(settings, market, news_client)
+                    plan, news, bar_time, validation = analyze_now(settings, market, checker, news_client)
                     latest_plan, latest_bar = plan, bar_time
                     if bar_time != last_checked_bar:
                         last_checked_bar = bar_time
                         hourly_update = datetime.fromtimestamp(bar_time, tz=timezone.utc).minute == 0
                         price_moved = last_sent_price is None or abs(plan.price - last_sent_price) >= plan.atr * 0.5
                         if plan.action != last_action or price_moved or hourly_update:
-                            telegram.send(format_advice(settings, plan, news, bar_time))
+                            telegram.send(format_advice(settings, plan, news, bar_time, validation))
                             last_sent_price = plan.price
                         last_action = plan.action
                     next_auto_check = time.monotonic() + max(30, settings.check_interval_seconds)
@@ -169,9 +177,9 @@ def main() -> None:
                         telegram.send(HELP_TEXT)
                     elif command == "gold":
                         telegram.send("⏳ กำลังอ่านกราฟและข่าวล่าสุด กรุณารอสักครู่...")
-                        plan, news, bar_time = analyze_now(settings, market, news_client)
+                        plan, news, bar_time, validation = analyze_now(settings, market, checker, news_client)
                         latest_plan, latest_bar = plan, bar_time
-                        telegram.send(format_advice(settings, plan, news, bar_time))
+                        telegram.send(format_advice(settings, plan, news, bar_time, validation))
                     elif command == "news":
                         telegram.send("⏳ กำลังรวบรวมข่าวทั่วโลก...")
                         telegram.send(format_news(news_client.fetch()))
@@ -183,7 +191,7 @@ def main() -> None:
                         else:
                             checked = datetime.fromtimestamp(latest_bar, tz=timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
                             telegram.send(
-                                f"✅ บอทออนไลน์\nตลาด: Gold Futures {settings.timeframe}\n"
+                                f"✅ บอทออนไลน์\nตลาด: {settings.market_symbol} {settings.timeframe}\n"
                                 f"มุมมองล่าสุด: {latest_plan.action}\nราคาล่าสุด: {_price(latest_plan.price)}\n"
                                 f"แท่งที่วิเคราะห์: {checked}\nไม่มีการเปิดออเดอร์อัตโนมัติ"
                             )

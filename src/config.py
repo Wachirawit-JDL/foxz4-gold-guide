@@ -30,6 +30,10 @@ class Settings:
     mt5_password: str | None
     mt5_server: str | None
     symbol: str
+    market_symbol: str
+    twelve_data_api_key: str
+    alpha_vantage_api_key: str
+    max_price_divergence_pct: float
     timeframe: str
     fast_ema: int
     slow_ema: int
@@ -55,6 +59,10 @@ class Settings:
             mt5_password=os.getenv("MT5_PASSWORD", "").strip() or None,
             mt5_server=os.getenv("MT5_SERVER", "").strip() or None,
             symbol=os.getenv("SYMBOL", "GC=F").strip().upper(),
+            market_symbol=os.getenv("MARKET_SYMBOL", "XAU/USD").strip().upper(),
+            twelve_data_api_key=os.getenv("TWELVE_DATA_API_KEY", "").strip(),
+            alpha_vantage_api_key=os.getenv("ALPHA_VANTAGE_API_KEY", "").strip(),
+            max_price_divergence_pct=float(os.getenv("MAX_PRICE_DIVERGENCE_PCT", "0.8")),
             timeframe=os.getenv("TIMEFRAME", "M15").strip().upper(),
             fast_ema=int(os.getenv("FAST_EMA", "9")),
             slow_ema=int(os.getenv("SLOW_EMA", "21")),
@@ -86,6 +94,8 @@ class Settings:
             raise ValueError("ช่วงคำนวณ indicator ต้องมีค่าอย่างน้อย 2")
         if self.lot_size <= 0:
             raise ValueError("LOT_SIZE ต้องมากกว่า 0")
+        if self.max_price_divergence_pct <= 0:
+            raise ValueError("MAX_PRICE_DIVERGENCE_PCT must be greater than 0")
         if self.check_interval_seconds < 1:
             raise ValueError("CHECK_INTERVAL_SECONDS ต้องมีค่าอย่างน้อย 1")
 
