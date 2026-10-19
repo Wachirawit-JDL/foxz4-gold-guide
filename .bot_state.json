@@ -1,7 +1,7 @@
 {
-  "last_bar": 1792411200,
+  "last_bar": 1792414800,
   "last_action": "SELL",
-  "last_sent_price": 4165.68804,
+  "last_sent_price": 4164.35985,
   "update_offset": 343171534,
   "paper": {
     "open": {
@@ -16,7 +16,7 @@
       "tp1_hit": false
     },
     "history": [],
-    "last_signal_bar": 1792411200,
+    "last_signal_bar": 1792414800,
     "last_signal_action": "SELL"
   }
 }
