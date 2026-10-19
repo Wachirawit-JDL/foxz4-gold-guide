@@ -1,10 +1,20 @@
 {
-  "last_bar": 1792429200,
-  "last_action": "WAIT",
-  "last_sent_price": 4137.71403,
+  "last_bar": 1792431000,
+  "last_action": "SELL",
+  "last_sent_price": 4145.17796,
   "update_offset": 343171534,
   "paper": {
-    "open": null,
+    "open": {
+      "side": "SELL",
+      "entry": 4145.17796,
+      "stop_loss": 4166.377180714286,
+      "original_stop_loss": 4166.377180714286,
+      "take_profit_1": 4137.746252857142,
+      "take_profit_2": 4132.791781428571,
+      "risk": 21.19922071428573,
+      "opened_bar": 1792431000,
+      "tp1_hit": false
+    },
     "history": [
       {
         "side": "SELL",
@@ -23,7 +33,7 @@
         "close_reason": "\u0e16\u0e36\u0e07 TP1 \u0e41\u0e25\u0e30 TP2"
       }
     ],
-    "last_signal_bar": 1792429200,
-    "last_signal_action": "WAIT"
+    "last_signal_bar": 1792431000,
+    "last_signal_action": "SELL"
   }
 }
