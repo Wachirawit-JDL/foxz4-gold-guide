@@ -1,20 +1,10 @@
 {
-  "last_bar": 1793606400,
-  "last_action": "SELL",
-  "last_sent_price": 3897.79291,
+  "last_bar": 1793643300,
+  "last_action": "BUY",
+  "last_sent_price": 3959.82278,
   "update_offset": 343171537,
   "paper": {
-    "open": {
-      "side": "SELL",
-      "entry": 3897.79291,
-      "stop_loss": 3919.5464165000003,
-      "original_stop_loss": 3919.5464165000003,
-      "take_profit_1": 3889.185145,
-      "take_profit_2": 3883.446635,
-      "risk": 21.753506500000185,
-      "opened_bar": 1793606400,
-      "tp1_hit": false
-    },
+    "open": null,
     "history": [
       {
         "side": "SELL",
@@ -447,9 +437,25 @@
         "result_r": -1.0,
         "result": "LOSS",
         "close_reason": "\u0e16\u0e36\u0e07 SL"
+      },
+      {
+        "side": "SELL",
+        "entry": 3897.79291,
+        "stop_loss": 3919.5464165000003,
+        "original_stop_loss": 3919.5464165000003,
+        "take_profit_1": 3889.185145,
+        "take_profit_2": 3883.446635,
+        "risk": 21.753506500000185,
+        "opened_bar": 1793606400,
+        "tp1_hit": false,
+        "closed_bar": 1793643300,
+        "exit": 3919.5464165000003,
+        "result_r": -1.0,
+        "result": "LOSS",
+        "close_reason": "\u0e16\u0e36\u0e07 SL"
       }
     ],
-    "last_signal_bar": 1793606400,
-    "last_signal_action": "SELL"
+    "last_signal_bar": 1793643300,
+    "last_signal_action": "BUY"
   }
 }
